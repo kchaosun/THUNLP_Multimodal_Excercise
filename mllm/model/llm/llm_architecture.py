@@ -231,13 +231,18 @@ class LLMAttention(nn.Module):
 
         ### ===> TODO: 计算多头注意力中的 Query，Key，Value
         ## 1. 将原始 Q、K、V 进行映射
+        query_states = self.q_proj(hidden_states)   # [bsz, q_len, num_heads * head_dim]
+        key_states = self.k_proj(hidden_states)     # [bsz, q_len, num_key_value_heads * head_dim]
+        value_states = self.v_proj(hidden_states)   # [bsz, q_len, num_key_value_heads * head_dim]
+        
         ## 2. 将映射后的 Q、K、V 整理为多头注意力的形状
-        query_states = None
-        key_states = None
-        value_states = None
+        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)             # [bsz, num_heads, q_len, head_dim]
+        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)       # [bsz, num_key_value_heads, q_len, head_dim]
+        value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)   # [bsz, num_key_value_heads, q_len, head_dim]
         ### <===
 
         kv_seq_len = key_states.shape[-2]
+        ## kv cache 处理键值缓存及有效的 kv 序列长度
         if past_key_value is not None:
             if self.layer_idx is None:
                 raise ValueError(
@@ -258,16 +263,29 @@ class LLMAttention(nn.Module):
         value_states = repeat_kv(value_states, self.num_key_value_groups)
 
         ### ==> TODO: 计算注意力机制中的加权权重，应用注意力掩码
-        attn_weights = None
-        ### <===
-
+        attn_weights = torch.matmul(query_states, key_states.transpose(-1, -2)) / math.sqrt(self.head_dim)            
+        if attention_mask is not None:
+            # 确保掩码形状为 [bs, 1, q_len, kv_seq_len]
+            if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
+                raise ValueError(
+                    f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
+                )
+            attn_weights = attn_weights.masked_fill(attention_mask == 0, float("-inf"))
+        elif self.is_causal:   # 使用因果掩码
+            q_len, kv_len = query_states.shape[-2], key_states.shape[-1]
+            causal_mask = torch.tril(torch.ones((q_len, kv_len), dtype=torch.float, device=attn_weights.device))
+            attn_weights = attn_weights.masked_fill(~causal_mask, float("-inf"))
+        
+        attn_weights = nn.functional.softmax(attn_weights, -1)  # [bsz, num_heads, q_len, q_len]
         attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
-
+        
         ### ===> TODO: 计算注意力输出取值
         ## 1. 对 Value 值进行加权
         ## 2. 合并多头注意力取值
         ## 3. 将输出进行映射
-        attn_output = None
+        attn_output = torch.matmul(attn_weights, value_states)  # [bsz, num_heads, q_len, head_dim]
+        attn_output = attn_output.transpose(1, 2).contiguous().view(bsz, q_len, -1)  # [bsz, q_len, num_heads * head_dim]
+        attn_output = self.o_proj(attn_output)  # [bsz, q_len, hidden_size]
         ### <===
 
         if not output_attentions:

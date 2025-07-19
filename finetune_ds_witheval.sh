@@ -9,7 +9,7 @@ NODE_RANK=0
 MASTER_ADDR=localhost
 MASTER_PORT=6001
 
-MODEL="MODEL_PATH"
+MODEL="/home/sunchao/MLLM_Excercise_Model"
 DATA="data/train.json"
 EVAL_DATA="data/test.json"
 MODEL_MAX_Length=2048 # if conduct multi-images sft, please set MODEL_MAX_Length=4096

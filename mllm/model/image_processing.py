@@ -372,7 +372,10 @@ class ModelImageProcessor(BaseImageProcessor):
         image_sizes_list = []
         tgt_sizes_list = []
 
+        # print(f"Processing {len(images_list)} image batches.")
         for _images in images_list:
+            # print("====cnt1====")
+            # print(f"Processing image batch with {len(_images)} images.")
             if _images is None or len(_images) == 0:
                 new_images_list.append([])
                 image_sizes_list.append([])
@@ -391,22 +394,36 @@ class ModelImageProcessor(BaseImageProcessor):
             image_sizes = [image.size for image in _images]
             tgt_sizes = []
             for image in _images:
+                # print("====cnt2====")
+                # print(f"Before processed image size: {image.size}")
                 image_patches = self.get_sliced_images(image, max_slice_nums)
+                # print(f"After slice origin image size: {image_patches[0].size}")
+                # print(f"After slice patch image size: {image_patches[-1].size}")
                 image_patches = [to_numpy_array(image).astype(np.float32) / 255 for image in image_patches]
                 image_patches = [
                     self.normalize(image=image, mean=self.mean, std=self.std, input_data_format=input_data_format)
                         for image in image_patches
                 ]
+                # print(f"After normalized origin image size: {image_patches[0].shape}")
+                # print(f"After normalized patch image size: {image_patches[-1].shape}")
                 image_patches = [
                     to_channel_dimension_format(image, ChannelDimension.FIRST, input_channel_dim=input_data_format)
                         for image in image_patches
                 ]
+                # print(f"After channel dimension format origin image size: {image_patches[0].shape}")
+                # print(f"After channel dimension format patch image size: {image_patches[-1].shape}")
                 for slice_image in image_patches:
                     new_images.append(self.reshape_by_patch(slice_image))
                     tgt_sizes.append(np.array((slice_image.shape[1] // self.patch_size, slice_image.shape[2] // self.patch_size)))
+                    # print("======cnt3======")
+                    # print(f"Before processed slice image size: {slice_image.shape}")
+                    # print(f"After processed slice image size: {new_images[0].shape}")
+                    # print(f"Processed slice image tgt size: {tgt_sizes[-1]}")
 
             if tgt_sizes:
                 tgt_sizes = np.vstack(tgt_sizes)
+            # print(f"Processed image sizes: {image_sizes}")
+            # print(f"Processed image tgt sizes: {tgt_sizes}")
 
             new_images_list.append(new_images)
             image_sizes_list.append(image_sizes)

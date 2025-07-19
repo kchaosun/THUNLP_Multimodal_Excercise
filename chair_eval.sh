@@ -1,4 +1,4 @@
-MODEL_NAME="DIR_TO_CHAIR_ANSWER"
+MODEL_NAME="/home/sunchao/THUNLP_Multimodal_Excercise"
 
 echo "========================="
 echo "MODEL: $MODEL_NAME"

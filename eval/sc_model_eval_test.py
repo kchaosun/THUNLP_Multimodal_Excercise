@@ -60,8 +60,8 @@ class MLLMEvalModel(MLLMModel):
 
         prompts_lists, input_images_lists = self.prepare_chat_inputs(tokenizer, system_prompt, msgs_list, images_list)
         
-        # print("====1====")
-        # print(f"prompts_lists: {prompts_lists}")
+        print("====1====")
+        print(f"prompts_lists: {prompts_lists}")
 
         inputs = processor(
             prompts_lists,
@@ -71,13 +71,13 @@ class MLLMEvalModel(MLLMModel):
             return_tensors="pt",
             max_length=max_inp_length
         ).to(self.device)
-        # print(f"inputs_ids: {inputs['input_ids'].size()}")
-        # print(f"attention_mask: {inputs['attention_mask'].size()}")
-        # print(f"pixel_values shape :({len(inputs['pixel_values'])}, {len(inputs['pixel_values'][0])})")
-        # print(f"tensor in pixel_values shape: {inputs['pixel_values'][0][0].size()}")
-        # print(f"image_sizes: {inputs['image_sizes']}")
-        # print(f"image_bound: {inputs['image_bound']}")
-        # print(f"tgt_sizes: {inputs['tgt_sizes']}")
+        print(f"inputs_ids: {inputs['input_ids'].size()}")
+        print(f"attention_mask: {inputs['attention_mask'].size()}")
+        print(f"pixel_values shape :({len(inputs['pixel_values'])}, {len(inputs['pixel_values'][0])})")
+        print(f"tensor in pixel_values shape: {inputs['pixel_values'][0][0].size()}")
+        print(f"image_sizes: {inputs['image_sizes']}")
+        print(f"image_bound: {inputs['image_bound']}")
+        print(f"tgt_sizes: {inputs['tgt_sizes']}")
 
         if sampling:
             generation_config = {
@@ -142,9 +142,12 @@ class MLLMEvalModel(MLLMModel):
             "role": "system",
             "content": system_prompt if system_prompt else "You are a helpful assistant."
         }]
+        
+        print(f"msgs_list: {msgs_list}")
 
         for i in range(len(msgs_list)):
             input_images_lists.append(images_list[i])
+            
             user_msg = msgs_list[i][0]
             
             if user_msg['role'] == 'user':
@@ -160,7 +163,7 @@ class MLLMEvalModel(MLLMModel):
                 add_generation_prompt=True
             )
             prompts_lists.append(prompt)
-            # print(f"Processed prompt {i}: {prompt}")
+            print(f"Processed prompt {i}: {prompt}")
 
         ### <===
 
@@ -183,6 +186,7 @@ def eval_model(args):
     model.eval().cuda()
 
     input_data = read_jsonlines(args.question_file)
+    print(f"Loaded {len(input_data)} items from {args.question_file}")
 
     ans_file = open(args.answers_file, 'w')
 
@@ -196,6 +200,8 @@ def eval_model(args):
                 image = Image.open(io.BytesIO(base64.b64decode(image))).convert('RGB')
             else:
                 image = Image.open(image).convert('RGB')
+            
+            print(f"Processing item {i} with question: {item['question']}")
 
             answer = model.chat(
                 image=image,
@@ -205,6 +211,7 @@ def eval_model(args):
                 sampling=args.sampling,
                 processor=processor
             )
+            print(f"Generated answer for item {i}: {answer}")
 
             answer_dict = {
                 "idx": i,
