@@ -1,6 +1,6 @@
 #!/bin/bash
 export PYTHONPATH=$PYTHONPATH:`realpath .`
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=2
 
 model_name_or_path=/home/sunchao/MODEL_CKPT
 data_path=data/objhal_bench.jsonl

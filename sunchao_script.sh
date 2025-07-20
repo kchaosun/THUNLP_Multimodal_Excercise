@@ -1,7 +1,7 @@
 #!/bin/bash
 SESSION_NAME="eval_session"
-SCRIPT_PATH="eval.sh"  # 替换为eval.sh的实际路径
-# SCRIPT_PATH="chair_eval.sh"  # 替换为eval.sh的实际路径
+# SCRIPT_PATH="eval.sh"  # 替换为eval.sh的实际路径
+SCRIPT_PATH="chair_eval.sh"  # 替换为eval.sh的实际路径
 
 # 检查tmux是否安装
 if ! command -v tmux &> /dev/null; then

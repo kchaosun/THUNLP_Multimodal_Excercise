@@ -257,7 +257,7 @@ class MLLMModel(MLLMPreTrainedModel):
         ### TODO: ===> 编写输出解码过程
         # 其中应该去除tokenizer.bos_id（句子起始特殊符号），以及terminators中的符号
         result_ids = result_ids.tolist()
-        print(f"result_ids: {result_ids}")
+        # print(f"result_ids: {result_ids}")
 
         for i in range(len(result_ids)):
             try:
